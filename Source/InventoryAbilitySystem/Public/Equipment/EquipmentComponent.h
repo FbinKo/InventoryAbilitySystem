@@ -102,14 +102,17 @@ class INVENTORYABILITYSYSTEM_API UEquipmentComponent : public UActorComponent
 private:
 	UPROPERTY(VisibleAnywhere)
 		TArray<FAppliedEquipmentEntry> equipmentList;
-	TObjectPtr<class UEquipmentInstance> equippedItem;
+	TObjectPtr<UEquipmentInstance> equippedWeapon;
+	TArray<TArray<TObjectPtr<UEquipmentInstance>>> equippedItems;
 
 protected:
 	/* number of weapon slots */
-	UPROPERTY(EditDefaultsOnly)
-		int32 numSlots = 2;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		int32 numWeaponSlots = 2;
 
-	TArray<TObjectPtr<UInventoryItemInstance>> slots;
+	TArray<TSubclassOf<UInventoryFragment_EquippableItem>> equipmentCategories;
+	TArray<TArray<TObjectPtr<UInventoryItemInstance>>> equipmentSlots;
+	TArray<TObjectPtr<UInventoryItemInstance>> weaponSlots;
 	int32 activeSlotIndex = -1;
 
 public:
@@ -128,10 +131,11 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
 		UEquipmentInstance* EquipItemDefinition(TSubclassOf<UEquipmentDefinition> EquipmentDefinition);
 
-	/* equips item (if used for weapons, cycling wont work) */
-	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
-		void EquipItemInstance(UInventoryItemInstance* instance);
+	void EquipItemInstance(int32 slotId, UInventoryItemInstance* instance);
 
+	UInventoryItemInstance* RemoveItemInstance(int32 slotId, TSubclassOf<UInventoryFragment_EquippableItem> type);
+
+	// only made accessible if user wants to handle unequip themself (this is only unequip, not remove from slot)
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
 		void UnequipItem(UEquipmentInstance* ItemInstance);
 
@@ -147,23 +151,25 @@ public:
 		TArray<UEquipmentInstance*> GetEquipmentInstancesOfType(TSubclassOf<UEquipmentInstance> InstanceType) const;
 
 	UFUNCTION(BlueprintPure)
-		TArray<UInventoryItemInstance*> GetSlots() const{ return slots; }
+		TArray<UInventoryItemInstance*> GetSlots(TSubclassOf<UInventoryFragment_EquippableItem> type) const;
 	UFUNCTION(BlueprintPure)
-		UInventoryItemInstance* GetCurrentItem() {
-		if (activeSlotIndex >= 0) return slots[activeSlotIndex];
+		UInventoryItemInstance* GetCurrentWeapon() {
+		if (activeSlotIndex >= 0) return weaponSlots[activeSlotIndex];
 		else return nullptr;
 	}
 
 	UFUNCTION(BlueprintPure)
-		int32 GetNextFreeSlot();
+		int32 GetNextFreeWeaponSlot();
 
-	/* sets item to specific weapon slot */
-	UFUNCTION(BlueprintCallable)
+	/* also equips item (exception are weapons, to keep current weapon active
+	* for weapons use SetActiveSlotIndex, CycleActiveSlotForward and CycleActiveSlotBackward
+	*/
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
 		void AddItemToSlot(int32 slotId, UInventoryItemInstance* item);
 
-	/* removes item from specific weaponn slot */
-	UFUNCTION(BlueprintCallable)
-		UInventoryItemInstance* RemoveItemFromSlot(int32 slotId);
+	/* removes and unequips the item in slot */
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
+		UInventoryItemInstance* RemoveItemFromSlot(int32 slotId, TSubclassOf<UInventoryFragment_EquippableItem> type);
 
 	UFUNCTION(BlueprintPure)
 		int32 GetActiveSlotIndex() { return activeSlotIndex; }
@@ -179,6 +185,6 @@ public:
 
 private:
 	class UInventoryAbilitySystemComponent* GetAbilitySystemComponent() const;
-	void EquipItemInSlot();
-	void UnequipItemInSlot();
+	void EquipWeaponInSlot();
+	void UnequipWeaponInSlot();
 };

@@ -117,16 +117,10 @@ public:
 	UFUNCTION(BlueprintPure)
 		FText GetDisplayName();
 
-	UFUNCTION(BlueprintPure)
-		FText GetCategoryName();
-
 	TSubclassOf<UInventoryItemDefinition> GetItemDef() const
 	{
 		return itemDef;
 	}
-
-	bool ShouldAddToSlots();
-	bool ShouldEquip();
 
 	UFUNCTION(BlueprintCallable, BlueprintPure = false, meta = (DeterminesOutputType = FragmentClass))
 		const UInventoryItemFragment* FindFragmentByClass(TSubclassOf<UInventoryItemFragment> FragmentClass) const;

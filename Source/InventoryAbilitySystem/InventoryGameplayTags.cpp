@@ -17,22 +17,32 @@ namespace InventoryGameplayTags
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Behavior_SurvivesDeath, "Ability.Behavior.SurvivesDeath", "An ability with this type tag should not be canceled due to death.");
 
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Type_Action_Use, "Ability.Type.Action.Use", "Ability is using an equipment/object.");
+
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Move, "InputTag.Move", "Move input.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Look_Mouse, "InputTag.Look.Mouse", "Look (mouse) input.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Look_Stick, "InputTag.Look.Stick", "Look (stick) input.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Crouch, "InputTag.Crouch", "Crouch input.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_AutoRun, "InputTag.AutoRun", "Auto-run input.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Use, "InputTag.Use", "Use input.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Interact, "InputTag.Interact", "Interact input.");
 
-	/*UE_DEFINE_GAMEPLAY_TAG_COMMENT(InitState_Spawned, "InitState.Spawned", "1: Actor/component has initially spawned and can be extended");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InitState_DataAvailable, "InitState.DataAvailable", "2: All required data has been loaded/replicated and is ready for initialization");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InitState_DataInitialized, "InitState.DataInitialized", "3: The available data has been initialized for this actor/component, but it is not ready for full gameplay");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InitState_GameplayReady, "InitState.GameplayReady", "4: The actor/component is fully ready for active gameplay");*/
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Equipment_Weapon_Melee, "GameplayCue.Equipment.Weapon.Melee");
+
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Character_DamageTaken, "GameplayCue.Character.DamageTaken");
+
+	UE_DEFINE_GAMEPLAY_TAG(GameplayEffect_Trait_Periodic, "GameplayEffect.Trait.Periodic");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayEffect_Trait_Instant, "GameplayEffect.Trait.Instant");
+
+	UE_DEFINE_GAMEPLAY_TAG(GameplayEffect_Type_Damage, "GameplayEffect.Type.Damage");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayEffect_Type_Heal, "GameplayEffect.Type.Heal");
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Death, "GameplayEvent.Death", "Event that fires on death. This event only fires on the server.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_OutOfEnergy, "GameplayEvent.OutOfEnergy", "Event that fires when energy reaches 0. This event only fires on the server.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_StoppedMoving, "GameplayEvent.StoppedMoving", "Event that fires when actor stops moving.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Reset, "GameplayEvent.Reset", "Event that fires once a player reset is executed.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_RequestReset, "GameplayEvent.RequestReset", "Event to request a player's pawn to be instantly replaced with a new one at a valid spawn location.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Use, "GameplayEvent.Use", "Event to inidcate an equipment/object is being used.");
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(SetByCaller_Damage, "SetByCaller.Damage", "SetByCaller tag used by damage gameplay effects.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(SetByCaller_Heal, "SetByCaller.Heal", "SetByCaller tag used by healing gameplay effects.");

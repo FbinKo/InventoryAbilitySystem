@@ -25,6 +25,24 @@ public:
 };
 
 USTRUCT(BlueprintType)
+struct INVENTORYABILITYSYSTEM_API FLoadout
+{
+	GENERATED_BODY()
+
+		FLoadout() {}
+
+public:
+	UPROPERTY(EditAnywhere)
+		int32 slotID = 0;
+
+	UPROPERTY(EditAnywhere)
+		FInventoryDefinition item;
+
+	UPROPERTY(EditAnywhere)
+		bool bEquipItem = false;
+};
+
+USTRUCT(BlueprintType)
 struct INVENTORYABILITYSYSTEM_API FInventoryEntry
 {
 	GENERATED_BODY()
@@ -45,6 +63,42 @@ private:
 	void RemoveStack(int32& removeStack);
 };
 
+UENUM(BlueprintType, meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
+enum class EInventoryCategory : uint8
+{
+	None = 0 UMETA(Hidden),
+	Weapon = 1 << 0,
+	Armor = 1 << 1,
+	Accessoir = 1 << 2,
+	Useable = 1 << 3,
+	All = (1 << 4) - 1,
+};
+ENUM_CLASS_FLAGS(EInventoryCategory);
+
+UENUM(BlueprintType, meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
+enum class EInventoryArmorCategory : uint8
+{
+	None = 0 UMETA(Hidden),
+	Head = 1 << 1,
+	Upperbody = 1 << 2,
+	Lowerbody = 1 << 3,
+	Feet = 1 << 4,
+	Arms = 1 << 5,
+	Hands = 1 << 6,
+	All = (1 << 7) - 1,
+};
+ENUM_CLASS_FLAGS(EInventoryArmorCategory);
+
+UENUM(BlueprintType, meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
+enum class EInventoryAccessoirCategory : uint8
+{
+	None = 0 UMETA(Hidden),
+	Ring = 1 << 1,
+	Necklace = 1 << 2,
+	All = (1 << 3) - 1,
+};
+ENUM_CLASS_FLAGS(EInventoryAccessoirCategory);
+
 UCLASS(DefaultToInstanced, EditInlineNew, Abstract)
 class INVENTORYABILITYSYSTEM_API UInventoryItemFragment : public UObject
 {
@@ -54,7 +108,7 @@ public:
 	virtual void OnInstanceCreated(UInventoryItemInstance* Instance) const {}
 };
 
-UCLASS()
+UCLASS(BlueprintType, Blueprintable)
 class UInventoryFragment_EquippableItem : public UInventoryItemFragment
 {
 	GENERATED_BODY()
@@ -62,6 +116,12 @@ class UInventoryFragment_EquippableItem : public UInventoryItemFragment
 public:
 	UPROPERTY(EditAnywhere)
 		TSubclassOf<class UEquipmentDefinition> EquipmentDefinition;
+};
+
+UCLASS()
+class UInventoryFragment_WeaponItem : public UInventoryFragment_EquippableItem
+{
+	GENERATED_BODY()
 };
 
 UCLASS()
@@ -113,20 +173,13 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 		FText DisplayName;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-		FText Category;
-
 	// default limit of how many items can be in one stack, can be modified in UInventoryComponent
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 		int32 stackLimit = -1;
 
-	// if the item should get added to the weapons slots (this allows to cycle through)
+	// when an instance is added, it checks if another instance below stackLimit already exists and adds it to it or creates a new stack
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-		bool bAddToSlots;
-
-	// if item is not an weapon, and it should not only be part of inventory
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (EditCondition = "!bAddToSlots", EditConditionHides))
-		bool bEquip;
+		bool bInstancesAlwaysStack = false;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Instanced)
 		TArray<TObjectPtr<UInventoryItemFragment>> Fragments;
@@ -164,15 +217,15 @@ public:
 	UFUNCTION(BlueprintPure)
 		int32 GetStackCount(UInventoryItemInstance* item);
 
+	// check for uniqueness, weight or other limitations and update stackCount to how many can be added
 	UFUNCTION(BlueprintNativeEvent)
-		bool CanAddItemToStack(FInventoryEntry targetStack, TSubclassOf<UInventoryItemDefinition> itemDef, int32 stackCount);
-	UFUNCTION(BlueprintNativeEvent)
-		bool CanAddItemToInventory(TSubclassOf<UInventoryItemDefinition> itemDef, int32 stackCount);
+		bool CanAddItemToInventory(TSubclassOf<UInventoryItemDefinition> itemDef, UPARAM(ref) int32& stackCount);
 
 	UFUNCTION(BlueprintCallable)
 		UInventoryItemInstance* AddItemDefinition(TSubclassOf<UInventoryItemDefinition> itemDef, UPARAM(ref) int32& stackCount);
 
 	// adds a specific instance of the item (might have differences to what it is in UInventoryItemDefinition, eg. a magazine which is not completely full)
+	// stackCount is how many instances should be added and gets updated how many couldn't be added
 	UFUNCTION(BlueprintCallable)
 		bool AddItemInstance(UInventoryItemInstance* instance, UPARAM(ref) int32& stackCount);
 
@@ -180,14 +233,16 @@ public:
 		void RemoveItemDefinition(TSubclassOf<UInventoryItemDefinition> itemDef, int32 stackCount);
 
 	// removes instances of a specific stack
+	// stackCount is how much is to be removed and gets updated to how much were successful removed
 	UFUNCTION(BlueprintCallable)
 		UInventoryItemInstance* RemoveItemInstance(UInventoryItemInstance* instance, UPARAM(ref) int32& stackCount);
 
 	UFUNCTION(BlueprintCallable)
 		void RemoveAllItems();
 
+	// if no category, returns all items
 	UFUNCTION(BlueprintCallable)
-		TArray<FInventoryEntry> GetItems() const;
+		TArray<FInventoryEntry> GetItems(TSubclassOf<UInventoryFragment_EquippableItem> type) const;
 
 	class UEquipmentComponent* FindEquipmentManager();
 

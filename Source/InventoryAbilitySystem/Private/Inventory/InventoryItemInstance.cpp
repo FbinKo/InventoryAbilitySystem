@@ -132,30 +132,6 @@ FText UInventoryItemInstance::GetDisplayName()
 	return FText();
 }
 
-FText UInventoryItemInstance::GetCategoryName()
-{
-	if (itemDef) {
-		return GetDefault<UInventoryItemDefinition>(itemDef)->Category;
-	}
-	return FText();
-}
-
-bool UInventoryItemInstance::ShouldAddToSlots()
-{
-	if (itemDef) {
-		return GetDefault<UInventoryItemDefinition>(itemDef)->bAddToSlots;
-	}
-	return false;
-}
-
-bool UInventoryItemInstance::ShouldEquip()
-{
-	if (itemDef) {
-		return GetDefault<UInventoryItemDefinition>(itemDef)->bEquip;
-	}
-	return false;
-}
-
 const UInventoryItemFragment* UInventoryItemInstance::FindFragmentByClass(TSubclassOf<UInventoryItemFragment> FragmentClass) const
 {
 	if ((itemDef != nullptr) && (FragmentClass != nullptr))

@@ -14,7 +14,7 @@ class INVENTORYABILITYSYSTEM_API AAbilityPawn : public APawn, public IAbilitySys
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Setup")
-		TArray<struct FInventoryDefinition> initialInventoryItems;
+		TArray<struct FLoadout> initialLoadout;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Setup")
 		TObjectPtr<class UInventoryInputConfig> initialInputConfig;

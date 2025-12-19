@@ -55,14 +55,13 @@ void AAbilityPawn::PossessedBy(AController* NewController)
 
 	if (UInventoryComponent* inventory = NewController->GetComponentByClass<UInventoryComponent>()) {
 		int slot = 0;
-		for (int i = 0; i < initialInventoryItems.Num(); i++) {
-			if (UInventoryItemInstance* item = inventory->AddItemDefinition(initialInventoryItems[i].Definition, initialInventoryItems[i].Amount)) {
-				if (UEquipmentComponent* equipment = inventory->FindEquipmentManager()) {
-					if (item->ShouldAddToSlots()) {
-						equipment->AddItemToSlot(slot++, item);
-					}
-					else if (item->ShouldEquip()) {
-						equipment->EquipItemInstance(item);
+		for (int i = 0; i < initialLoadout.Num(); i++) {
+			FLoadout info = initialLoadout[i];
+			if (UInventoryItemInstance* item = inventory->AddItemDefinition(info.item.Definition, info.item.Amount)) {
+				if(info.bEquipItem)
+				{
+					if (UEquipmentComponent* equipment = inventory->FindEquipmentManager()) {
+						equipment->AddItemToSlot(info.slotID, item);
 					}
 				}
 			}

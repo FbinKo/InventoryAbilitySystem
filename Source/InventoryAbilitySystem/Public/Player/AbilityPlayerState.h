@@ -22,6 +22,8 @@ private:
 		TObjectPtr<const class UInventoryHealthSet> HealthSet;
 	UPROPERTY()
 		TObjectPtr<const class UInventoryCombatSet> CombatSet;
+	UPROPERTY()
+		TObjectPtr<const class UInventoryMovementSet> MovementSet;
 
 public:
 	AAbilityPlayerState(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());

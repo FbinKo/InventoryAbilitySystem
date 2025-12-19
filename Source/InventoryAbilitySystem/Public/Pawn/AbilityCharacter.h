@@ -15,7 +15,7 @@ class INVENTORYABILITYSYSTEM_API AAbilityCharacter : public ACharacter, public I
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Setup")
-		TArray<struct FInventoryDefinition> initialInventoryItems;
+		TArray<struct FLoadout> initialLoadout;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Setup")
 		TObjectPtr<class UInventoryInputConfig> initialInputConfig;

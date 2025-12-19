@@ -81,24 +81,81 @@ UEquipmentInstance* UEquipmentComponent::EquipItemDefinition(TSubclassOf<UEquipm
 	return Result;
 }
 
-void UEquipmentComponent::EquipItemInstance(UInventoryItemInstance* instance)
+void UEquipmentComponent::EquipItemInstance(int32 slotId, UInventoryItemInstance* instance)
 {
 	if (instance) {
-
 		if (const UInventoryFragment_EquippableItem* EquipInfo = instance->FindFragmentByClass<UInventoryFragment_EquippableItem>())
 		{
+			TObjectPtr<UEquipmentInstance> NewEquipment;
 			TSubclassOf<UEquipmentDefinition> EquipDef = EquipInfo->EquipmentDefinition;
 			if (EquipDef != nullptr)
 			{
-				TObjectPtr<UEquipmentInstance> NewEquipment = EquipItemDefinition(EquipDef);
+				NewEquipment = EquipItemDefinition(EquipDef);
 				if (NewEquipment)
 				{
 					NewEquipment->SetInstigator(instance);
 				}
 			}
+
+			int32 categoryId = INDEX_NONE;
+			if (!equipmentCategories.Find(EquipInfo->GetClass(), categoryId))
+			{
+				categoryId = equipmentCategories.Emplace(EquipInfo->GetClass());
+			}
+
+			TArray<TObjectPtr<UInventoryItemInstance>> categoryItems;
+			TArray<TObjectPtr<UEquipmentInstance>> categoryEquipment;
+			if (equipmentSlots.IsValidIndex(categoryId))
+			{
+				categoryItems = equipmentSlots[categoryId];
+				categoryEquipment = equippedItems[categoryId];
+
+				if (categoryItems.IsValidIndex(slotId))
+				{
+					categoryItems[slotId] = instance;
+					categoryEquipment[slotId] = NewEquipment;
+				}
+				else
+				{
+					categoryItems.EmplaceAt(slotId, instance);
+					categoryEquipment.EmplaceAt(slotId, NewEquipment);
+				}
+
+				equipmentSlots[categoryId] = categoryItems;
+				equippedItems[categoryId] = categoryEquipment;
+			}
+			else
+			{
+				categoryItems.EmplaceAt(slotId, instance);
+				equipmentSlots.Emplace(categoryItems);
+				categoryEquipment.EmplaceAt(slotId, NewEquipment);
+				equippedItems.Emplace(categoryEquipment);
+			}
 		}
 		return;
 	}
+}
+
+UInventoryItemInstance* UEquipmentComponent::RemoveItemInstance(int32 slotId, TSubclassOf<UInventoryFragment_EquippableItem> type)
+{
+	UInventoryItemInstance* Result = nullptr;
+	int32 categoryId = INDEX_NONE;
+	if (equipmentCategories.Find(type, categoryId))
+	{
+		if (TArray<TObjectPtr<UInventoryItemInstance>>* slots = &equipmentSlots[categoryId])
+		{
+			if (slots->IsValidIndex(slotId))
+			{
+				Result = (*slots)[slotId];
+				if (Result)
+				{
+					UnequipItem(equippedItems[categoryId][slotId]);
+					(*slots)[slotId] = nullptr;
+				}
+			}
+		}
+	}
+	return Result;
 }
 
 void UEquipmentComponent::UnequipItem(UEquipmentInstance* ItemInstance)
@@ -179,10 +236,29 @@ TArray<UEquipmentInstance*> UEquipmentComponent::GetEquipmentInstancesOfType(TSu
 	return Results;
 }
 
-int32 UEquipmentComponent::GetNextFreeSlot()
+TArray<UInventoryItemInstance*> UEquipmentComponent::GetSlots(TSubclassOf<UInventoryFragment_EquippableItem> type) const
+{
+	if (type->IsChildOf(UInventoryFragment_WeaponItem::StaticClass()))
+		return weaponSlots;
+	else
+	{
+		TArray<UInventoryItemInstance*> Results;
+		int32 categoryId = INDEX_NONE;
+		if (equipmentCategories.Find(type, categoryId))
+		{
+			if (const TArray<TObjectPtr<UInventoryItemInstance>>* slots = &equipmentSlots[categoryId])
+			{
+				Results = *slots;
+			}
+		}
+		return Results;
+	}
+}
+
+int32 UEquipmentComponent::GetNextFreeWeaponSlot()
 {
 	int32 SlotIndex = 0;
-	for (TObjectPtr<UInventoryItemInstance> ItemPtr : slots)
+	for (TObjectPtr<UInventoryItemInstance> ItemPtr : weaponSlots)
 	{
 		if (ItemPtr == nullptr)
 		{
@@ -196,32 +272,46 @@ int32 UEquipmentComponent::GetNextFreeSlot()
 
 void UEquipmentComponent::AddItemToSlot(int32 slotId, UInventoryItemInstance* item)
 {
-	if (slots.Num() < numSlots)
-		slots.AddDefaulted(numSlots - slots.Num());
+	if (const UInventoryFragment_EquippableItem* EquipInfo = item->FindFragmentByClass<UInventoryFragment_EquippableItem>())
+	{
+		if (EquipInfo->IsA(UInventoryFragment_WeaponItem::StaticClass()))
+		{
+			if (weaponSlots.Num() < numWeaponSlots)
+				weaponSlots.AddDefaulted(numWeaponSlots - weaponSlots.Num());
 
-	if (slots.IsValidIndex(slotId) && item) {
-		slots[slotId] = item;
+			if (weaponSlots.IsValidIndex(slotId) && item)
+				weaponSlots[slotId] = item;
+		}
+		else
+			EquipItemInstance(slotId, item);
 	}
 }
 
-UInventoryItemInstance* UEquipmentComponent::RemoveItemFromSlot(int32 slotId)
+UInventoryItemInstance* UEquipmentComponent::RemoveItemFromSlot(int32 slotId, TSubclassOf<UInventoryFragment_EquippableItem> type)
 {
 	UInventoryItemInstance* Result = nullptr;
 
-	if (activeSlotIndex == slotId)
+	if (type->IsChildOf(UInventoryFragment_WeaponItem::StaticClass()))
 	{
-		UnequipItemInSlot();
-		activeSlotIndex = -1;
-	}
-
-	if (slots.IsValidIndex(slotId))
-	{
-		Result = slots[slotId];
-
-		if (Result != nullptr)
+		if (activeSlotIndex == slotId)
 		{
-			slots[slotId] = nullptr;
+			UnequipWeaponInSlot();
+			activeSlotIndex = -1;
 		}
+
+		if (weaponSlots.IsValidIndex(slotId))
+		{
+			Result = weaponSlots[slotId];
+
+			if (Result != nullptr)
+			{
+				weaponSlots[slotId] = nullptr;
+			}
+		}
+	}
+	else
+	{
+		Result = RemoveItemInstance(slotId, type);
 	}
 
 	return Result;
@@ -229,28 +319,28 @@ UInventoryItemInstance* UEquipmentComponent::RemoveItemFromSlot(int32 slotId)
 
 void UEquipmentComponent::SetActiveSlotIndex(int32 newId)
 {
-	if (slots.IsValidIndex(newId) && (activeSlotIndex != newId)) {
-		UnequipItemInSlot();
+	if (weaponSlots.IsValidIndex(newId) && (activeSlotIndex != newId)) {
+		UnequipWeaponInSlot();
 
 		activeSlotIndex = newId;
 
-		EquipItemInSlot();
+		EquipWeaponInSlot();
 	}
 }
 
 void UEquipmentComponent::CycleActiveSlotForward()
 {
-	if (slots.Num() < numSlots)
+	if (weaponSlots.Num() < numWeaponSlots)
 	{
 		return;
 	}
 
-	const int32 OldIndex = (activeSlotIndex < 0 ? slots.Num() - 1 : activeSlotIndex);
+	const int32 OldIndex = (activeSlotIndex < 0 ? weaponSlots.Num() - 1 : activeSlotIndex);
 	int32 NewIndex = activeSlotIndex;
 	do
 	{
-		NewIndex = (NewIndex + 1) % slots.Num();
-		if (slots[NewIndex] != nullptr)
+		NewIndex = (NewIndex + 1) % weaponSlots.Num();
+		if (weaponSlots[NewIndex] != nullptr)
 		{
 			SetActiveSlotIndex(NewIndex);
 			return;
@@ -260,17 +350,17 @@ void UEquipmentComponent::CycleActiveSlotForward()
 
 void UEquipmentComponent::CycleActiveSlotBackward()
 {
-	if (slots.Num() < numSlots)
+	if (weaponSlots.Num() < numWeaponSlots)
 	{
 		return;
 	}
 
-	const int32 OldIndex = (activeSlotIndex < 0 ? slots.Num() - 1 : activeSlotIndex);
+	const int32 OldIndex = (activeSlotIndex < 0 ? weaponSlots.Num() - 1 : activeSlotIndex);
 	int32 NewIndex = activeSlotIndex;
 	do
 	{
-		NewIndex = (NewIndex - 1 + slots.Num()) % slots.Num();
-		if (slots[NewIndex] != nullptr)
+		NewIndex = (NewIndex - 1 + weaponSlots.Num()) % weaponSlots.Num();
+		if (weaponSlots[NewIndex] != nullptr)
 		{
 			SetActiveSlotIndex(NewIndex);
 			return;
@@ -283,33 +373,33 @@ UInventoryAbilitySystemComponent* UEquipmentComponent::GetAbilitySystemComponent
 	return Cast<UInventoryAbilitySystemComponent>(UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(GetOwner()));
 }
 
-void UEquipmentComponent::EquipItemInSlot()
+void UEquipmentComponent::EquipWeaponInSlot()
 {
-	check(slots.IsValidIndex(activeSlotIndex));
-	check(equippedItem == nullptr);
+	check(weaponSlots.IsValidIndex(activeSlotIndex));
+	check(equippedWeapon == nullptr);
 
-	if (UInventoryItemInstance* SlotItem = slots[activeSlotIndex])
+	if (UInventoryItemInstance* SlotItem = weaponSlots[activeSlotIndex])
 	{
 		if (const UInventoryFragment_EquippableItem* EquipInfo = SlotItem->FindFragmentByClass<UInventoryFragment_EquippableItem>())
 		{
 			TSubclassOf<UEquipmentDefinition> EquipDef = EquipInfo->EquipmentDefinition;
 			if (EquipDef != nullptr)
 			{
-				equippedItem = EquipItemDefinition(EquipDef);
-				if (equippedItem != nullptr)
+				equippedWeapon = EquipItemDefinition(EquipDef);
+				if (equippedWeapon != nullptr)
 				{
-					equippedItem->SetInstigator(SlotItem);
+					equippedWeapon->SetInstigator(SlotItem);
 				}
 			}
 		}
 	}
 }
 
-void UEquipmentComponent::UnequipItemInSlot()
+void UEquipmentComponent::UnequipWeaponInSlot()
 {
-	if (equippedItem != nullptr)
+	if (equippedWeapon != nullptr)
 	{
-		UnequipItem(equippedItem);
-		equippedItem = nullptr;
+		UnequipItem(equippedWeapon);
+		equippedWeapon = nullptr;
 	}
 }

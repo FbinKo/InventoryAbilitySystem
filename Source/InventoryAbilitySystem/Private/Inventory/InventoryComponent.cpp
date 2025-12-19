@@ -10,7 +10,7 @@
 
 void FInventoryEntry::AddStack(int32& additionalStack)
 {
-	int32 stackLimit = Cast<UInventoryItemDefinition>(instance->GetItemDef()->GetDefaultObject())->stackLimit;
+	int32 stackLimit = instance->GetItemDef()->GetDefaultObject<UInventoryItemDefinition>()->stackLimit;
 	if (stackLimit < 0) {
 		stackCount += additionalStack;
 		additionalStack = 0;
@@ -49,8 +49,6 @@ int32 UInventoryFragment_SetStats::GetItemStatByTag(FGameplayTag Tag) const
 
 UInventoryItemDefinition::UInventoryItemDefinition(const FObjectInitializer& ObjectInitializer)
 {
-	bAddToSlots = false;
-	bEquip = true;
 }
 
 const UInventoryItemFragment* UInventoryItemDefinition::FindFragmentByClass(TSubclassOf<UInventoryItemFragment> FragmentClass) const
@@ -113,15 +111,9 @@ int32 UInventoryComponent::GetStackCount(UInventoryItemInstance* item)
 	return 0;
 }
 
-bool UInventoryComponent::CanAddItemToStack_Implementation(FInventoryEntry targetStack, TSubclassOf<UInventoryItemDefinition> itemDef, int32 stackCount)
+bool UInventoryComponent::CanAddItemToInventory_Implementation(TSubclassOf<UInventoryItemDefinition> itemDef, int32& stackCount)
 {
-	// eg. check for tag stack limitations like a magazine with different amount of ammo in
-	return true;
-}
-
-bool UInventoryComponent::CanAddItemToInventory_Implementation(TSubclassOf<UInventoryItemDefinition> itemDef, int32 stackCount)
-{
-	// eg. check for uniqueness, weight or other limitations
+	// eg. check for uniqueness, weight or other limitations and update stackCount to how many can be added
 	return true;
 }
 
@@ -131,19 +123,19 @@ UInventoryItemInstance* UInventoryComponent::AddItemDefinition(TSubclassOf<UInve
 	if (stackCount > 0)
 	{
 		if (itemDef) {
+			if (!CanAddItemToInventory(itemDef, stackCount))
+				return Result;
+
 			// add to existing stack
 			for (auto EntryIt = inventoryList.CreateIterator(); EntryIt; ++EntryIt)
 			{
 				FInventoryEntry& Entry = *EntryIt;
 				if (Entry.instance->itemDef == itemDef)
 				{
-					if (CanAddItemToStack(Entry, itemDef, stackCount))
-					{
-						Entry.AddStack(stackCount);
-						Result = Entry.instance;
-						if (stackCount == 0)
-							return Result;
-					}
+					Entry.AddStack(stackCount);
+					Result = Entry.instance;
+					if (stackCount == 0)
+						return Result;
 				}
 			}
 
@@ -152,20 +144,17 @@ UInventoryItemInstance* UInventoryComponent::AddItemDefinition(TSubclassOf<UInve
 			{
 				if (IsInventoryBigEnough())
 				{
-					if (CanAddItemToInventory(itemDef, stackCount))
-					{
-						const UInventoryItemDefinition* defaultItem = GetDefault<UInventoryItemDefinition>(itemDef);
-						FInventoryEntry& NewEntry = inventoryList.AddDefaulted_GetRef();
-						NewEntry.instance = NewObject<UInventoryItemInstance>(GetOwner());
-						NewEntry.instance->SetItemDef(itemDef);
-						NewEntry.AddStack(stackCount);
-						for (UInventoryItemFragment* Fragment : defaultItem->Fragments) {
-							if (Fragment)
-								Fragment->OnInstanceCreated(NewEntry.instance);
-						}
-
-						Result = NewEntry.instance;
+					const UInventoryItemDefinition* defaultItem = GetDefault<UInventoryItemDefinition>(itemDef);
+					FInventoryEntry& NewEntry = inventoryList.AddDefaulted_GetRef();
+					NewEntry.instance = NewObject<UInventoryItemInstance>(GetOwner());
+					NewEntry.instance->SetItemDef(itemDef);
+					NewEntry.AddStack(stackCount);
+					for (UInventoryItemFragment* Fragment : defaultItem->Fragments) {
+						if (Fragment)
+							Fragment->OnInstanceCreated(NewEntry.instance);
 					}
+
+					Result = NewEntry.instance;
 				}
 				else
 					break;
@@ -178,15 +167,43 @@ UInventoryItemInstance* UInventoryComponent::AddItemDefinition(TSubclassOf<UInve
 bool UInventoryComponent::AddItemInstance(UInventoryItemInstance* instance, int32& stackCount)
 {
 	if (instance) {
-		if (IsInventoryBigEnough())
+		TSubclassOf<UInventoryItemDefinition> itemDefToAdd = instance->GetItemDef();
+		if (CanAddItemToInventory(itemDefToAdd, stackCount))
 		{
-			if (CanAddItemToInventory(instance->itemDef, stackCount))
+			if (itemDefToAdd->GetDefaultObject<UInventoryItemDefinition>()->bInstancesAlwaysStack)
 			{
-				FInventoryEntry& NewEntry = inventoryList.AddDefaulted_GetRef();
-				NewEntry.instance = instance;
-				NewEntry.AddStack(stackCount);
-				if (stackCount == 0)
-					return true;
+				for (auto EntryIt = inventoryList.CreateIterator(); EntryIt; ++EntryIt)
+				{
+					FInventoryEntry& Entry = *EntryIt;
+					if (Entry.instance->itemDef == itemDefToAdd)
+					{
+						Entry.AddStack(stackCount);
+						if (stackCount == 0)
+							return true;
+					}
+				}
+			}
+
+			while (stackCount > 0)
+			{
+				if (IsInventoryBigEnough())
+				{
+					// either dont stack or more than previous stacks could hold need to be added
+					FInventoryEntry& NewEntry = inventoryList.AddDefaulted_GetRef();
+					NewEntry.AddStack(stackCount);
+					if (stackCount == 0)
+					{
+						NewEntry.instance = instance;
+						return true;
+					}
+					else
+					{
+						NewEntry.instance = NewObject<UInventoryItemInstance>(GetOwner());
+						NewEntry.instance->SetItemDef(itemDefToAdd);
+					}
+				}
+				else
+					break;
 			}
 		}
 	}
@@ -199,18 +216,19 @@ UInventoryItemInstance* UInventoryComponent::RemoveItemInstance(UInventoryItemIn
 	UInventoryItemInstance* Result = nullptr;
 	if (instance)
 	{
-		UInventoryItemInstance* newInstance = NewObject<UInventoryItemInstance>(GetOwner());
-		newInstance->SetItemDef(instance->itemDef);
+		Result = NewObject<UInventoryItemInstance>(GetOwner());
+		Result->SetItemDef(instance->itemDef);
 		for (auto EntryIt = inventoryList.CreateIterator(); EntryIt; ++EntryIt)
 		{
 			FInventoryEntry& Entry = *EntryIt;
 			if (Entry.instance == instance)
 			{
-				stackCount = FMath::Min(stackCount, Entry.stackCount);
+				int32 actualRemoval = FMath::Min(stackCount, Entry.stackCount);
 				Entry.RemoveStack(stackCount);
 				if (Entry.stackCount <= 0)
 					EntryIt.RemoveCurrent();
 
+				stackCount = actualRemoval;
 				break;
 			}
 		}
@@ -222,16 +240,17 @@ void UInventoryComponent::RemoveItemDefinition(TSubclassOf<UInventoryItemDefinit
 {
 	if (itemDef)
 	{
-		int consumedCount = 0;
-		while (consumedCount < stackCount)
+		while (0 < stackCount)
 		{
-			for(auto EntryIt = inventoryList.CreateIterator(); EntryIt; ++EntryIt)
+			for (auto EntryIt = inventoryList.CreateIterator(); EntryIt; ++EntryIt)
 			{
 				FInventoryEntry& Entry = *EntryIt;
 				if (Entry.instance->itemDef == itemDef)
 				{
-					consumedCount += Entry.stackCount;
-					EntryIt.RemoveCurrent();
+					Entry.RemoveStack(stackCount);
+					if (Entry.stackCount <= 0)
+						EntryIt.RemoveCurrent();
+
 					break;
 				}
 			}
@@ -244,9 +263,13 @@ void UInventoryComponent::RemoveAllItems()
 	inventoryList.Empty();
 }
 
-TArray<FInventoryEntry> UInventoryComponent::GetItems() const
+TArray<FInventoryEntry> UInventoryComponent::GetItems(TSubclassOf<UInventoryFragment_EquippableItem> type) const
 {
-	TArray<FInventoryEntry> Result = inventoryList.FilterByPredicate([](const FInventoryEntry& Entry) { return Entry.stackCount > 0; });
+	TArray<FInventoryEntry> Result;
+	if (type)
+		Result = inventoryList.FilterByPredicate([type](const FInventoryEntry& Entry) { return Entry.stackCount > 0 && Entry.instance->FindFragmentByClass<UInventoryFragment_EquippableItem>()->IsA(type); });
+	else
+		Result = inventoryList.FilterByPredicate([](const FInventoryEntry& Entry) { return Entry.stackCount > 0; });
 	return Result;
 }
 
