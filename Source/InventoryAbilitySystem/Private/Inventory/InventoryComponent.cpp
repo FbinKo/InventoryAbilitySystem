@@ -190,10 +190,10 @@ bool UInventoryComponent::AddItemInstance(UInventoryItemInstance* instance, int3
 				{
 					// either dont stack or more than previous stacks could hold need to be added
 					FInventoryEntry& NewEntry = inventoryList.AddDefaulted_GetRef();
+					NewEntry.instance = instance;
 					NewEntry.AddStack(stackCount);
 					if (stackCount == 0)
 					{
-						NewEntry.instance = instance;
 						return true;
 					}
 					else

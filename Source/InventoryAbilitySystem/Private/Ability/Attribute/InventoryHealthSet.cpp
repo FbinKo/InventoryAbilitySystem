@@ -151,6 +151,9 @@ bool UInventoryHealthSet::PreGameplayEffectExecute(FGameplayEffectModCallbackDat
 	HealthBeforeAttributeChange = GetHealth();
 	MaxHealthBeforeAttributeChange = GetMaxHealth();
 
+	ShieldBeforeAttributeChange = GetShield();
+	MaxShieldBeforeAttributeChange = GetMaxShield();
+
 	KineticArmorBeforeAttributeChange = GetKineticArmor();
 	EnergyArmorBeforeAttributeChange = GetEnergyArmor();
 	KineticResistanceBeforeAttributeChange = GetKineticResistance();

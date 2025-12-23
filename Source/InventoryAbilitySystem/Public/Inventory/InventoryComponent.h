@@ -179,7 +179,7 @@ public:
 
 	// when an instance is added, it checks if another instance below stackLimit already exists and adds it to it or creates a new stack
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-		bool bInstancesAlwaysStack = false;
+		bool bInstancesAlwaysStack = true;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Instanced)
 		TArray<TObjectPtr<UInventoryItemFragment>> Fragments;

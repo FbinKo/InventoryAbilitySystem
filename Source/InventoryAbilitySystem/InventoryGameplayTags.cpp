@@ -14,10 +14,18 @@ namespace InventoryGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_ActivateFail_TagsMissing, "Ability.ActivateFail.TagsMissing", "Ability failed to activate because tags are missing.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_ActivateFail_Networking, "Ability.ActivateFail.Networking", "Ability failed to activate because it did not pass the network checks.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_ActivateFail_ActivationGroup, "Ability.ActivateFail.ActivationGroup", "Ability failed to activate because of its activation group.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_ActivateFail_NoAmmo, "Ability.ActivateFail.NoAmmo", "Ability failed to activate because weapon has no more ammo.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_ActivateFail_MagazineFull, "Ability.ActivateFail.MagazineFull", "Ability failed to activate because the magazine is full.");
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Behavior_SurvivesDeath, "Ability.Behavior.SurvivesDeath", "An ability with this type tag should not be canceled due to death.");
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Type_Action_Use, "Ability.Type.Action.Use", "Ability is using an equipment/object.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Type_Action_Weapon_Fire, "Ability.Type.Action.Weapon.Fire", "Ability is firing a weapon.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Type_Action_Weapon_Reload, "Ability.Type.Action.Weapon.Reload", "Ability is reloading a weapon.");
+
+	UE_DEFINE_GAMEPLAY_TAG(Ability_Event_Weapon_Fire, "Ability.Event.Weapon.Fire");
+	UE_DEFINE_GAMEPLAY_TAG(Ability_Event_Weapon_Reload, "Ability.Event.Weapon.Reload");
+	UE_DEFINE_GAMEPLAY_TAG(Ability_Event_Weapon_ADS, "Ability.Event.Weapon.ADS");
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Move, "InputTag.Move", "Move input.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Look_Mouse, "InputTag.Look.Mouse", "Look (mouse) input.");
@@ -26,6 +34,12 @@ namespace InventoryGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_AutoRun, "InputTag.AutoRun", "Auto-run input.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Use, "InputTag.Use", "Use input.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Interact, "InputTag.Interact", "Interact input.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Weapon_Fire, "InputTag.Weapon.Fire", "Fire weapon input.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Weapon_FireAuto, "InputTag.Weapon.FireAuto", "Fire weapon input for auto mode.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Weapon_Reload, "InputTag.Weapon.Reload", "Realod weapon input.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Weapon_ADS, "InputTag.Weapon.ADS", "Aim weapon input.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Weapon_CycleForward, "InputTag.Weapon.CycleForward", "Cycle weapon slot forward input.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Weapon_CycleBackward, "InputTag.Weapon.CycleBackward", "Cycle weapon solot backward input.");
 
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Equipment_Weapon_Melee, "GameplayCue.Equipment.Weapon.Melee");
 

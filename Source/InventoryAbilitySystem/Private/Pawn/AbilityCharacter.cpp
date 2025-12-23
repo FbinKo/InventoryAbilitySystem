@@ -155,6 +155,11 @@ void AAbilityCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 			Input->BindAction(action.InputAction, ETriggerEvent::Triggered, this, &ThisClass::Input_AbilityInputTagPressed, action.InputTag);
 			Input->BindAction(action.InputAction, ETriggerEvent::Completed, this, &ThisClass::Input_AbilityInputTagReleased, action.InputTag);
 		}
+
+		for (FInventoryInputAction nativeAction : initialInputConfig->NativeInputActions)
+		{
+			Input->BindActionInstanceLambda(nativeAction.InputAction, ETriggerEvent::Triggered, [nativeAction, this](const FInputActionInstance& ActionInstance) { ThisClass::Input_NativeInputTagTriggered(nativeAction.InputTag, ActionInstance); });
+		}
 	}
 }
 
@@ -171,6 +176,65 @@ void AAbilityCharacter::Input_AbilityInputTagReleased(FGameplayTag InputTag)
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->AbilityInputTagReleased(InputTag);
+	}
+}
+
+void AAbilityCharacter::Input_NativeInputTagTriggered_Implementation(FGameplayTag InputTag, const FInputActionInstance& InputActionInstance)
+{
+	if (InputTag.MatchesTagExact(InventoryGameplayTags::InputTag_Move))
+		Input_Move(InputActionInstance.GetValue());
+	else if (InputTag.MatchesTagExact(InventoryGameplayTags::InputTag_Look_Mouse))
+		Input_LookMouse(InputActionInstance.GetValue());
+	else if (InputTag.MatchesTagExact(InventoryGameplayTags::InputTag_Weapon_CycleForward))
+		Input_Cycle(true);
+	else if (InputTag.MatchesTagExact(InventoryGameplayTags::InputTag_Weapon_CycleBackward))
+		Input_Cycle(false);
+}
+
+void AAbilityCharacter::Input_Move(const FInputActionValue& InputActionValue)
+{
+	if (AController* controller = GetController())
+	{
+		const FVector2D Value = InputActionValue.Get<FVector2D>();
+		const FRotator MovementRotation(0.0f, Controller->GetControlRotation().Yaw, 0.0f);
+
+		if (Value.X != 0.0f)
+		{
+			const FVector MovementDirection = MovementRotation.RotateVector(FVector::RightVector);
+			AddMovementInput(MovementDirection, Value.X);
+		}
+
+		if (Value.Y != 0.0f)
+		{
+			const FVector MovementDirection = MovementRotation.RotateVector(FVector::ForwardVector);
+			AddMovementInput(MovementDirection, Value.Y);
+		}
+	}
+}
+
+void AAbilityCharacter::Input_LookMouse(const FInputActionValue& InputActionValue)
+{
+	const FVector2D Value = InputActionValue.Get<FVector2D>();
+
+	if (Value.X != 0.0f)
+	{
+		AddControllerYawInput(Value.X);
+	}
+
+	if (Value.Y != 0.0f)
+	{
+		AddControllerPitchInput(Value.Y);
+	}
+}
+
+void AAbilityCharacter::Input_Cycle(bool bCycleForward)
+{
+	if (UEquipmentComponent* equipment = GetComponentByClass<UEquipmentComponent>())
+	{
+		if (bCycleForward)
+			equipment->CycleActiveSlotForward();
+		else
+			equipment->CycleActiveSlotBackward();
 	}
 }
 

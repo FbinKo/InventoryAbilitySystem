@@ -15,7 +15,7 @@ class INVENTORYABILITYSYSTEM_API UInventoryAbilityCost : public UObject
 
 protected:
 	/** How much of the item to spend (keyed on ability level) */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AbilityCost)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Costs)
 		FScalableFloat Quantity;
 
 	/** Which tag to send back as a response if this cost cannot be applied */

@@ -325,6 +325,8 @@ void UEquipmentComponent::SetActiveSlotIndex(int32 newId)
 		activeSlotIndex = newId;
 
 		EquipWeaponInSlot();
+
+		OnWeaponSlotChanged.Broadcast(activeSlotIndex);
 	}
 }
 

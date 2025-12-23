@@ -6,6 +6,7 @@
 #include "GenericTeamAgentInterface.h"
 #include "AbilitySystemInterface.h"
 #include "GameplayTagContainer.h"
+#include "EnhancedInputComponent.h"
 #include "AbilityCharacter.generated.h"
 
 UCLASS()
@@ -59,6 +60,12 @@ protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	void Input_AbilityInputTagPressed(FGameplayTag InputTag);
 	void Input_AbilityInputTagReleased(FGameplayTag InputTag);
+
+	UFUNCTION(BlueprintNativeEvent)
+		void Input_NativeInputTagTriggered(FGameplayTag InputTag, const FInputActionInstance& InputActionValue);
+	void Input_Move(const FInputActionValue& InputActionValue);
+	void Input_LookMouse(const FInputActionValue& InputActionValue);
+	void Input_Cycle(bool bCycleForward);
 
 	UFUNCTION()
 		virtual void OnDeathFinished(AActor* OwningActor);

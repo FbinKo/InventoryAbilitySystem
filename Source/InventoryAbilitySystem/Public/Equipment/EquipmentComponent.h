@@ -11,6 +11,7 @@
 class UInventoryItemInstance;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEquipEvent, UEquipmentInstance*, NewEquipment);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWeaponChangedEvent, int32, NewSlotIndex);
 
 USTRUCT(BlueprintType)
 struct INVENTORYABILITYSYSTEM_API FSlotsChangedMessage
@@ -170,6 +171,9 @@ public:
 	/* removes and unequips the item in slot */
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
 		UInventoryItemInstance* RemoveItemFromSlot(int32 slotId, TSubclassOf<UInventoryFragment_EquippableItem> type);
+
+	UPROPERTY(BlueprintAssignable)
+		FWeaponChangedEvent OnWeaponSlotChanged;
 
 	UFUNCTION(BlueprintPure)
 		int32 GetActiveSlotIndex() { return activeSlotIndex; }
